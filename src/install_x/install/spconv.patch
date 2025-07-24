@@ -1,0 +1,13 @@
+diff --git a/setup.py b/setup.py
+index b2c1100..f3604a5 100644
+--- a/setup.py
++++ b/setup.py
+@@ -41,7 +41,7 @@ if cuda_ver:
+     RELEASE_NAME += "-cu{}".format(cuda_ver_str)
+     deps = ["cumm-cu{}>=0.7.11, <0.8.0".format(cuda_ver_str)]
+ else:
+-    deps = ["cumm>=0.7.11, <0.8.0"]
++    deps = ["cumm>=0.7.11"]
+ 
+ 
+ 

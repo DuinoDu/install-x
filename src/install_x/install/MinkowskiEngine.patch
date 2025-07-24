@@ -1,0 +1,51 @@
+diff --git a/src/3rdparty/concurrent_unordered_map.cuh b/src/3rdparty/concurrent_unordered_map.cuh
+index ed8e1b2..b4c0504 100644
+--- a/src/3rdparty/concurrent_unordered_map.cuh
++++ b/src/3rdparty/concurrent_unordered_map.cuh
+@@ -27,6 +27,7 @@
+ 
+ #include <thrust/pair.h>
+ #include <thrust/count.h>
++#include <thrust/execution_policy.h>
+ 
+ #include <functional>
+ #include <memory>
+diff --git a/src/convolution_kernel.cuh b/src/convolution_kernel.cuh
+index aed7227..182d1b5 100644
+--- a/src/convolution_kernel.cuh
++++ b/src/convolution_kernel.cuh
+@@ -27,6 +27,7 @@
+ 
+ #include <array>
+ #include <vector>
++#include <thrust/execution_policy.h>
+ 
+ #include "gpu.cuh"
+ #include "kernel_map.cuh"
+diff --git a/src/coordinate_map_gpu.cu b/src/coordinate_map_gpu.cu
+index fb7325d..4076ddb 100644
+--- a/src/coordinate_map_gpu.cu
++++ b/src/coordinate_map_gpu.cu
+@@ -36,6 +36,8 @@
+ #include <thrust/iterator/counting_iterator.h>
+ #include <thrust/iterator/transform_iterator.h>
+ #include <thrust/sort.h>
++#include <thrust/unique.h>
++#include <thrust/remove.h>
+ 
+ namespace minkowski {
+ 
+diff --git a/src/spmm.cu b/src/spmm.cu
+index 8891a56..917eed0 100644
+--- a/src/spmm.cu
++++ b/src/spmm.cu
+@@ -35,6 +35,9 @@
+ #include <c10/cuda/CUDACachingAllocator.h>
+ #include <torch/extension.h>
+ #include <torch/script.h>
++#include <thrust/execution_policy.h>
++#include <thrust/reduce.h> 
++#include <thrust/sort.h>
+ 
+ namespace minkowski {
+ 
