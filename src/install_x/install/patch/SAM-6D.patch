@@ -1,0 +1,291 @@
+diff --git a/SAM-6D/Instance_Segmentation_Model/run_inference_custom.py b/SAM-6D/Instance_Segmentation_Model/run_inference_custom.py
+index 850e5cb..074c51b 100644
+--- a/SAM-6D/Instance_Segmentation_Model/run_inference_custom.py
++++ b/SAM-6D/Instance_Segmentation_Model/run_inference_custom.py
+@@ -42,6 +42,13 @@ inv_rgb_transform = T.Compose(
+         ]
+     )
+ 
++def transform_cad(points, scale=1.0, rotation=0.0, rotation_axis=[0.0, 0.0, 1.0], translation=[0.0, 0.0, 0.0]):
++    points *= scale
++    rotation_matrix = trimesh.transformations.rotation_matrix(rotation, np.asarray(rotation_axis))
++    rotation_matrix = rotation_matrix[:3, :3]
++    points = points @ rotation_matrix.T + np.asarray(translation)
++    return points
++
+ def visualize(rgb, detections, save_path="tmp.png"):
+     img = rgb.copy()
+     gray = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2GRAY)
+@@ -92,7 +99,7 @@ def batch_input_data(depth_path, cam_path, device):
+     batch['depth_scale'] = torch.from_numpy(depth_scale).unsqueeze(0).to(device)
+     return batch
+ 
+-def run_inference(segmentor_model, output_dir, cad_path, rgb_path, depth_path, cam_path, stability_score_thresh):
++def run_inference(segmentor_model, output_dir, cad_path, rgb_path, depth_path, cam_path, stability_score_thresh, template_dir):
+     with initialize(version_base=None, config_path="configs"):
+         cfg = compose(config_name='run_inference.yaml')
+ 
+@@ -123,7 +130,8 @@ def run_inference(segmentor_model, output_dir, cad_path, rgb_path, depth_path, c
+         
+     
+     logging.info("Initializing template")
+-    template_dir = os.path.join(output_dir, 'templates')
++    if template_dir is None:
++        template_dir = os.path.join(output_dir, 'templates')
+     num_templates = len(glob.glob(f"{template_dir}/*.npy"))
+     boxes, masks, templates = [], [], []
+     for idx in range(num_templates):
+@@ -187,8 +195,18 @@ def run_inference(segmentor_model, output_dir, cad_path, rgb_path, depth_path, c
+     model.ref_data["poses"] =  poses[load_index_level_in_level2(0, "all"), :, :]
+ 
+     mesh = trimesh.load_mesh(cad_path)
++    load_from_glb = False
++    if isinstance(mesh, trimesh.Scene):
++        print("GLB contains a scene, extracting first mesh...")
++        scene = mesh
++        meshes = list(mesh.geometry.values())
++        mesh = meshes[0]
++        load_from_glb = True
+     model_points = mesh.sample(2048).astype(np.float32) / 1000.0
+-    model.ref_data["pointcloud"] = torch.tensor(model_points).unsqueeze(0).data.to(device)
++    if load_from_glb:
++        model_points = transform_cad(model_points, scale=100)
++        model_points = transform_cad(model_points, rotation=np.pi/2, rotation_axis=[1, 0, 0])
++    model.ref_data["pointcloud"] = torch.tensor(model_points, dtype=torch.float).unsqueeze(0).data.to(device)
+     
+     image_uv = model.project_template_to_image(best_template, pred_idx_objects, batch, detections.masks)
+ 
+@@ -218,10 +236,12 @@ if __name__ == "__main__":
+     parser.add_argument("--rgb_path", nargs="?", help="Path to RGB image")
+     parser.add_argument("--depth_path", nargs="?", help="Path to Depth image(mm)")
+     parser.add_argument("--cam_path", nargs="?", help="Path to camera information")
++    parser.add_argument('--template_dir', default=None, type=str, help='Path to templates')
+     parser.add_argument("--stability_score_thresh", default=0.97, type=float, help="stability_score_thresh of SAM")
+     args = parser.parse_args()
+     os.makedirs(f"{args.output_dir}/sam6d_results", exist_ok=True)
+     run_inference(
+         args.segmentor_model, args.output_dir, args.cad_path, args.rgb_path, args.depth_path, args.cam_path, 
+         stability_score_thresh=args.stability_score_thresh,
+-    )
+\ No newline at end of file
++        template_dir=args.template_dir,
++    )
+diff --git a/SAM-6D/Pose_Estimation_Model/model/fine_point_matching.py b/SAM-6D/Pose_Estimation_Model/model/fine_point_matching.py
+index 8296c95..750b36d 100644
+--- a/SAM-6D/Pose_Estimation_Model/model/fine_point_matching.py
++++ b/SAM-6D/Pose_Estimation_Model/model/fine_point_matching.py
+@@ -43,6 +43,12 @@ class FinePointMatching(nn.Module):
+         init_t = end_points['init_t']
+         p1_ = (p1 - init_t.unsqueeze(1)) @ init_R
+ 
++        from pdebug.debug import sam6d
++        sam6d.pcd(p1, "match", color=[0, 255, 0], normalize=True)
++        sam6d.pcd(p2, "object", color=[0, 255, 255])
++        sam6d.pcds([p1, p2], "concat", color=[[0, 255, 0], [0, 255, 255]])
++        sam6d.pcds([p1_, p2], "concat_coarse", color=[[0, 255, 0], [0, 255, 255]])
++
+         f1 = self.in_proj(f1) + self.PE(p1_)
+         f1 = torch.cat([self.bg_token.repeat(B,1,1), f1], dim=1) # adding bg
+ 
+diff --git a/SAM-6D/Pose_Estimation_Model/model/pointnet2/setup.py b/SAM-6D/Pose_Estimation_Model/model/pointnet2/setup.py
+index ebc9448..7e4fd3b 100644
+--- a/SAM-6D/Pose_Estimation_Model/model/pointnet2/setup.py
++++ b/SAM-6D/Pose_Estimation_Model/model/pointnet2/setup.py
+@@ -1,11 +1,7 @@
+-# Copyright (c) Facebook, Inc. and its affiliates.
+-# 
+-# This source code is licensed under the MIT license found in the
+-# LICENSE file in the root directory of this source tree.
+-import os
+-from setuptools import setup, find_packages
++from setuptools import setup
+ from torch.utils.cpp_extension import BuildExtension, CUDAExtension
+ import glob
++import os
+ 
+ _ext_src_root = "_ext_src"
+ _ext_sources = glob.glob("{}/src/*.cpp".format(_ext_src_root)) + glob.glob(
+@@ -13,24 +9,21 @@ _ext_sources = glob.glob("{}/src/*.cpp".format(_ext_src_root)) + glob.glob(
+ )
+ _ext_headers = glob.glob("{}/include/*".format(_ext_src_root))
+ 
++headers = "-I" + os.path.join(os.path.dirname(os.path.abspath(__file__)), '_ext_src', 'include')
++
+ setup(
+     name='pointnet2',
+-    packages = find_packages(),
+     ext_modules=[
+         CUDAExtension(
+             name='pointnet2._ext',
+             sources=_ext_sources,
+-            include_dirs = [os.path.join(_ext_src_root, "include")],
+             extra_compile_args={
+-                # "cxx": ["-O2", "-I{}".format("{}/include".format(_ext_src_root))],
+-                # "nvcc": ["-O2", "-I{}".format("{}/include".format(_ext_src_root))],
+-                "cxx": [],
+-                "nvcc": ["-O3", 
+-                "-DCUDA_HAS_FP16=1",
+-                "-D__CUDA_NO_HALF_OPERATORS__",
+-                "-D__CUDA_NO_HALF_CONVERSIONS__",
+-                "-D__CUDA_NO_HALF2_OPERATORS__",
+-            ]},)
++                "cxx": ["-O2", headers],
++                "nvcc": ["-O2", headers]
++            },
++        )
+     ],
+-    cmdclass={'build_ext': BuildExtension.with_options(use_ninja=True)}
++    cmdclass={
++        'build_ext': BuildExtension
++    }
+ )
+diff --git a/SAM-6D/Pose_Estimation_Model/run_inference_custom.py b/SAM-6D/Pose_Estimation_Model/run_inference_custom.py
+index 1a77005..319a2c6 100644
+--- a/SAM-6D/Pose_Estimation_Model/run_inference_custom.py
++++ b/SAM-6D/Pose_Estimation_Model/run_inference_custom.py
+@@ -53,6 +53,7 @@ def get_parser():
+     parser.add_argument("--depth_path", nargs="?", help="Path to Depth image(mm)")
+     parser.add_argument("--cam_path", nargs="?", help="Path to camera information")
+     parser.add_argument("--seg_path", nargs="?", help="Path to segmentation information(generated by ISM)")
++    parser.add_argument('--template_dir', default=None, type=str, help='template_dir')
+     parser.add_argument("--det_score_thresh", default=0.2, help="The score threshold of detection")
+     args_cfg = parser.parse_args()
+ 
+@@ -77,6 +78,7 @@ def init():
+     cfg.depth_path = args.depth_path
+     cfg.cam_path = args.cam_path
+     cfg.seg_path = args.seg_path
++    cfg.template_dir = args.template_dir
+ 
+     cfg.det_score_thresh = args.det_score_thresh
+     gorilla.utils.set_cuda_visible_devices(gpu_ids = cfg.gpus)
+@@ -162,7 +164,15 @@ def get_templates(path, cfg):
+     return all_tem, all_tem_pts, all_tem_choose
+ 
+ 
+-def get_test_data(rgb_path, depth_path, cam_path, cad_path, seg_path, det_score_thresh, cfg):
++def transform_cad(points, scale=1.0, rotation=0.0, rotation_axis=[0.0, 0.0, 1.0], translation=[0.0, 0.0, 0.0]):
++    points *= scale
++    rotation_matrix = trimesh.transformations.rotation_matrix(rotation, np.asarray(rotation_axis))
++    rotation_matrix = rotation_matrix[:3, :3]
++    points = points @ rotation_matrix.T + np.asarray(translation)
++    return points
++
++
++def get_test_data(rgb_path, depth_path, cam_path, cad_path, seg_path, det_score_thresh, cfg, output_dir):
+     dets = []
+     with open(seg_path) as f:
+         dets_ = json.load(f) # keys: scene_id, image_id, category_id, bbox, score, segmentation
+@@ -171,6 +181,9 @@ def get_test_data(rgb_path, depth_path, cam_path, cad_path, seg_path, det_score_
+             dets.append(det)
+     del dets_
+ 
++    top2_scores = sorted([d["score"] for d in dets])[-2:]
++    dets = [d for d in dets if d["score"] in top2_scores]
++
+     cam_info = json.load(open(cam_path))
+     K = np.array(cam_info['cam_K']).reshape(3, 3)
+ 
+@@ -180,16 +193,30 @@ def get_test_data(rgb_path, depth_path, cam_path, cad_path, seg_path, det_score_
+     whole_depth = load_im(depth_path).astype(np.float32) * cam_info['depth_scale'] / 1000.0
+     whole_pts = get_point_cloud_from_depth(whole_depth, K)
+ 
++    from pdebug.debug import sam6d
++    sam6d.whole_pts(whole_pts)
++
+     mesh = trimesh.load_mesh(cad_path)
++    load_from_glb = False
++    if isinstance(mesh, trimesh.Scene):
++        print("GLB contains a scene, extracting first mesh...")
++        scene = mesh
++        meshes = list(mesh.geometry.values())
++        mesh = meshes[0]
++        load_from_glb = True
+     model_points = mesh.sample(cfg.n_sample_model_point).astype(np.float32) / 1000.0
++    if load_from_glb:
++        model_points = transform_cad(model_points, scale=100)
++        model_points = transform_cad(model_points, rotation=np.pi/2, rotation_axis=[1, 0, 0])
+     radius = np.max(np.linalg.norm(model_points, axis=1))
+-
++    print(f"Model radius (meter): {radius}")
+ 
+     all_rgb = []
+     all_cloud = []
+     all_rgb_choose = []
+     all_score = []
+     all_dets = []
++    all_boxes = []
+     for inst in dets:
+         seg = inst['segmentation']
+         score = inst['score']
+@@ -240,6 +267,14 @@ def get_test_data(rgb_path, depth_path, cam_path, cad_path, seg_path, det_score_
+         all_rgb_choose.append(torch.IntTensor(rgb_choose).long())
+         all_score.append(score)
+         all_dets.append(inst)
++        all_boxes.append([x1, y1, x2, y2])
++
++    # from pdebug.visp import draw
++    # vis_boxes = draw.boxes(cv2.imread(rgb_path), all_boxes)
++    # cv2.imwrite(f"{output_dir}/vis_boxes.png", vis_boxes)
++    # from pdebug.data_types import PointcloudTensor 
++    # for ind, pcd in enumerate(all_cloud):
++    #     PointcloudTensor(pcd.reshape(-1, 3)).to_ply(f"pcd_{ind}.ply")
+ 
+     ret_dict = {}
+     ret_dict['pts'] = torch.stack(all_cloud).cuda()
+@@ -253,7 +288,6 @@ def get_test_data(rgb_path, depth_path, cam_path, cad_path, seg_path, det_score_
+     return ret_dict, whole_image, whole_pts.reshape(-1, 3), model_points, all_dets
+ 
+ 
+-
+ if __name__ == "__main__":
+     cfg = init()
+ 
+@@ -270,15 +304,21 @@ if __name__ == "__main__":
+     gorilla.solver.load_checkpoint(model=model, filename=checkpoint)
+ 
+     print("=> extracting templates ...")
+-    tem_path = os.path.join(cfg.output_dir, 'templates')
++    if cfg.template_dir and os.path.exists(cfg.template_dir):
++        tem_path = cfg.template_dir
++    else:
++        tem_path = os.path.join(cfg.output_dir, 'templates')
+     all_tem, all_tem_pts, all_tem_choose = get_templates(tem_path, cfg.test_dataset)
++    if cfg.cad_path.endswith(".glb"):
++        for i in range(len(all_tem_pts)):
++            all_tem_pts[i] *= 100
+     with torch.no_grad():
+         all_tem_pts, all_tem_feat = model.feature_extraction.get_obj_feats(all_tem, all_tem_pts, all_tem_choose)
+ 
+     print("=> loading input data ...")
+     input_data, img, whole_pts, model_points, detections = get_test_data(
+         cfg.rgb_path, cfg.depth_path, cfg.cam_path, cfg.cad_path, cfg.seg_path, 
+-        cfg.det_score_thresh, cfg.test_dataset
++        cfg.det_score_thresh, cfg.test_dataset, cfg.output_dir
+     )
+     ninstance = input_data['pts'].size(0)
+     
+@@ -308,8 +348,9 @@ if __name__ == "__main__":
+ 
+     print("=> visualizating ...")
+     save_path = os.path.join(f"{cfg.output_dir}/sam6d_results", 'vis_pem.png')
+-    valid_masks = pose_scores == pose_scores.max()
++
++    # valid_masks = pose_scores == pose_scores.max()
++    valid_masks = np.array([True for _ in range(ninstance)])
+     K = input_data['K'].detach().cpu().numpy()[valid_masks]
+     vis_img = visualize(img, pred_rot[valid_masks], pred_trans[valid_masks], model_points*1000, K, save_path)
+     vis_img.save(save_path)
+-
+diff --git a/SAM-6D/demo.sh b/SAM-6D/demo.sh
+index 3ef7463..fbc5e5c 100644
+--- a/SAM-6D/demo.sh
++++ b/SAM-6D/demo.sh
+@@ -1,6 +1,6 @@
+ # Render CAD templates
+ cd Render
+-blenderproc run render_custom_templates.py --output_dir $OUTPUT_DIR --cad_path $CAD_PATH #--colorize True 
++blenderproc run render_custom_templates.py --output_dir $OUTPUT_DIR --cad_path $CAD_PATH --custom-blender-path $HOME/opt/blender-3.3.1-linux-x64  #--colorize True 
+ 
+ 
+ # Run instance segmentation model
