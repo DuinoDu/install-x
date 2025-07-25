@@ -18,7 +18,7 @@ prepare_github $url
 cd $GITHUB/$name
 
 git reset --hard HEAD
-git apply $cur/${name}.patch
+git apply $cur/patch/${name}.patch
 
 prepare_github https://github.com/FindDefinition/cumm
 cd $GITHUB/cumm

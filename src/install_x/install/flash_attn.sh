@@ -4,7 +4,7 @@ _curfile=$(realpath $0)
 cur=$(dirname $_curfile)
 source $cur/base.sh
 
-url=Github Link
+url=https://github.com/Dao-AILab/flash-attention
 name=$(basename $url)
 name=${name%.git}
 
@@ -15,20 +15,10 @@ cd $GITHUB/$name
 # git reset --hard HEAD
 # git apply $cur/patch/${name}.patch
 
-python3 -c "import ${name}" 2>/dev/null
+python3 -c "import flash_attn" 2>/dev/null
 if [ $? -eq 0 ]; then
     echo "${name} is already installed, skip"
     exit
 fi
 
-# TODO
-
-
-
-function help() {
-    echo ""
-}
-
-if [ $? -eq 0 ]; then
-    help
-fi
+pip3 install . --no-build-isolation

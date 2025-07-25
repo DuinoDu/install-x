@@ -8,7 +8,7 @@ prepare_github https://github.com/NVIDIA/MinkowskiEngine.git
 cd $GITHUB/MinkowskiEngine
 
 git reset --hard HEAD
-git apply $cur/MinkowskiEngine.patch
+git apply $cur/patch/MinkowskiEngine.patch
 
 sudo apt install -y build-essential libopenblas-dev # python3-dev 
 pip3 install ninja

@@ -1,0 +1,135 @@
+diff --git a/knn/knn/__init__.py b/knn/knn/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/knn/knn_modules.py b/knn/knn/knn_modules.py
+similarity index 88%
+rename from knn/knn_modules.py
+rename to knn/knn/knn_modules.py
+index ea43dc6..33fa96e 100755
+--- a/knn/knn_modules.py
++++ b/knn/knn/knn_modules.py
+@@ -4,8 +4,8 @@ import operator as op
+ import functools
+ import torch
+ from torch.autograd import Variable, Function
+-from knn_pytorch import knn_pytorch
+-# import knn_pytorch
++from knn import knn_pytorch
++
+ def knn(ref, query, k=1):
+   """ Compute k nearest neighbors for each query point.
+   """
+diff --git a/knn/setup.py b/knn/setup.py
+index 9aa9803..f453f21 100755
+--- a/knn/setup.py
++++ b/knn/setup.py
+@@ -44,7 +44,7 @@ def get_extensions():
+ 
+     ext_modules = [
+         extension(
+-            "knn_pytorch.knn_pytorch",
++            "knn.knn_pytorch",
+             sources,
+             include_dirs=include_dirs,
+             define_macros=define_macros,
+@@ -56,7 +56,7 @@ def get_extensions():
+ 
+ 
+ setup(
+-    name="knn_pytorch",
++    name="knn",
+     version="0.1",
+     author="foolyc",
+     url="https://github.com/foolyc/torchKNN",
+diff --git a/knn/src/cuda/vision.h b/knn/src/cuda/vision.h
+index 970267f..47e12f7 100755
+--- a/knn/src/cuda/vision.h
++++ b/knn/src/cuda/vision.h
+@@ -1,7 +1,7 @@
+ #pragma once
+ #include <torch/extension.h>
+-#include <THC/THC.h>
++#include <cuda_runtime.h> 
+ 
+ void knn_device(float* ref_dev, int ref_width,
+     float* query_dev, int query_width,
+-    int height, int k, float* dist_dev, long* ind_dev, cudaStream_t stream);
+\ No newline at end of file
++    int height, int k, float* dist_dev, long* ind_dev, cudaStream_t stream);
+diff --git a/knn/src/knn.h b/knn/src/knn.h
+index 33367fd..5e4261b 100755
+--- a/knn/src/knn.h
++++ b/knn/src/knn.h
+@@ -3,8 +3,7 @@
+ 
+ #ifdef WITH_CUDA
+ #include "cuda/vision.h"
+-#include <THC/THC.h>
+-extern THCState *state;
++#include <ATen/cuda/ThrustAllocator.h>
+ #endif
+ 
+ 
+@@ -30,7 +29,7 @@ int knn(at::Tensor& ref, at::Tensor& query, at::Tensor& idx)
+   if (ref.type().is_cuda()) {
+ #ifdef WITH_CUDA
+     // TODO raise error if not compiled with CUDA
+-    float *dist_dev = (float*)THCudaMalloc(state, ref_nb * query_nb * sizeof(float));
++    float *dist_dev = (float*)c10::cuda::CUDACachingAllocator::raw_alloc(ref_nb * query_nb * sizeof(float));
+ 
+     for (int b = 0; b < batch; b++)
+     {
+@@ -39,16 +38,16 @@ int knn(at::Tensor& ref, at::Tensor& query, at::Tensor& idx)
+       knn_device(ref_dev + b * dim * ref_nb, ref_nb, query_dev + b * dim * query_nb, query_nb, dim, k,
+       dist_dev, idx_dev + b * k * query_nb, c10::cuda::getCurrentCUDAStream());
+     }
+-    THCudaFree(state, dist_dev);
++    c10::cuda::CUDACachingAllocator::raw_delete(dist_dev);
+     cudaError_t err = cudaGetLastError();
+     if (err != cudaSuccess)
+     {
+         printf("error in knn: %s\n", cudaGetErrorString(err));
+-        THError("aborting");
++        std::cerr << "aborting" << std::endl;
+     }
+     return 1;
+ #else
+-    AT_ERROR("Not compiled with GPU support");
++  std::cerr << "Not compiled with GPU support" << std::endl;
+ #endif
+   }
+ 
+diff --git a/pointnet2/pointnet2/__init__.py b/pointnet2/pointnet2/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/pointnet2/pointnet2_modules.py b/pointnet2/pointnet2/pointnet2_modules.py
+similarity index 100%
+rename from pointnet2/pointnet2_modules.py
+rename to pointnet2/pointnet2/pointnet2_modules.py
+diff --git a/pointnet2/pointnet2_utils.py b/pointnet2/pointnet2/pointnet2_utils.py
+similarity index 99%
+rename from pointnet2/pointnet2_utils.py
+rename to pointnet2/pointnet2/pointnet2_utils.py
+index 46ab211..f15a151 100755
+--- a/pointnet2/pointnet2_utils.py
++++ b/pointnet2/pointnet2/pointnet2_utils.py
+@@ -14,7 +14,7 @@ from __future__ import (
+ import torch
+ from torch.autograd import Function
+ import torch.nn as nn
+-import pytorch_utils as pt_utils
++import pointnet2.pytorch_utils as pt_utils
+ import sys
+ 
+ try:
+@@ -613,4 +613,4 @@ class OnlyGroup(nn.Module):
+         if len(ret) == 1:
+             return ret[0]
+         else:
+-            return tuple(ret)
+\ No newline at end of file
++            return tuple(ret)
+diff --git a/pointnet2/pytorch_utils.py b/pointnet2/pointnet2/pytorch_utils.py
+similarity index 100%
+rename from pointnet2/pytorch_utils.py
+rename to pointnet2/pointnet2/pytorch_utils.py

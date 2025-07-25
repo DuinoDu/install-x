@@ -17,23 +17,22 @@ bash $cur/torch.sh
 bash $cur/spconv.sh
 
 make version
-pip3 install ".[finegrasp]"
+pip3 install -e ".[finegrasp]"
 
 bash $cur/graspnetAPI.sh
 bash $cur/MinkowskiEngine.sh
 pip3 install transforms3d==0.4.2 numpy==1.26.4
 
 prepare_github https://github.com/mahaoxiang822/Scale-Balanced-Grasp
+cd $GITHUB
+git reset --hard HEAD
+git apply $cur/patch/${name}.patch
+
+sitepackage=$(python3 -c "import site;  print(site.getsitepackages()[0])")
 cd $GITHUB/Scale-Balanced-Grasp/pointnet2
-python3 setup.py install
+python setup.py build_ext --inplace
+cp -r pointnet2 $sitepackage
 
 cd $GITHUB/Scale-Balanced-Grasp/knn
-python3 setup.py install
-
-function help() {
-    echo ""
-}
-
-if [ $? -eq 0 ]; then
-    help
-fi
+python setup.py build_ext --inplace
+cp -r knn $sitepackage

@@ -17,9 +17,16 @@ fi
 GITHUB=$INSTALL_X_CACHE
 CACHE_DIR=$INSTALL_X_CACHE
 
+# better for echo log
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+END_COLOR='\033[0m' # No Color
+
 
 ###################### FUNCTIONS ######################
 # __all__ =  [
+#       "get_cuda_version",
 #       "create_venv",
 #       "is_venv_python",
 #       "conda_to_pip",
