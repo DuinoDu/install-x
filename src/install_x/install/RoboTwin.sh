@@ -18,7 +18,7 @@ cd $GITHUB/$name
 
 function setup_env() {
     sudo apt install libvulkan1 mesa-vulkan-drivers vulkan-tools
-    install_pytorch 2.4.1
+    bash $cur/torch.sh 2.4.1
     bash script/_install.sh
     
     echo "${GREEN}>> Download assets${END_COLOR}"

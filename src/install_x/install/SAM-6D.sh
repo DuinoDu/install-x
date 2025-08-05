@@ -13,7 +13,7 @@ cd $GITHUB/$name
 git reset --hard HEAD
 git apply ${cur}/patch/SAM-6D.patch
 
-install_pytorch 2.4.1
+bash $cur/torch.sh 2.4.1
 
 cd SAM-6D
 conda_to_pip environment.yaml requirements.txt

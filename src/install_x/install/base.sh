@@ -57,7 +57,7 @@ function create_venv() {
             echo "Install python venv $1"
             rye=$HOME/.rye/shims/rye
             if [ -f setup.py ];then
-                mv setup.py /tmp/setup.py.bakup
+                mv setup.py setup.py.bakup
             fi
 
             if [ ! -f pyproject.toml ];then
@@ -66,8 +66,8 @@ function create_venv() {
             $rye pin $1
             $rye sync
 
-            if [ -f /tmp/setup.py.bakup ];then
-                mv /tmp/setup.py.bakup setup.py 
+            if [ -f setup.py.bakup ];then
+                mv setup.py.bakup setup.py 
             fi
 
             get_pip_cache=$HOME/.cache/get-pip.py
@@ -91,6 +91,14 @@ function create_venv() {
             else
                 echo "No venv found, nor python_version select, exit"
             fi  
+        fi
+    fi
+    
+    if [[ -v "$VIRTUAL_ENV" ]];then
+        pip3_bin=$VIRTUAL_ENV/bin/pip3
+        if [ ! -f $pip3_bin ];then
+            wget -O- https://bootstrap.pypa.io/get-pip.py | python3
+            which pip3
         fi
     fi
 }
@@ -175,5 +183,3 @@ function prepare_github() {
     fi
     popd
 }
-
-

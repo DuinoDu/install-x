@@ -1,0 +1,26 @@
+diff --git a/lang_sam/models/gdino.py b/lang_sam/models/gdino.py
+index 8aa1105..dcec4e8 100644
+--- a/lang_sam/models/gdino.py
++++ b/lang_sam/models/gdino.py
+@@ -28,7 +28,7 @@ class GDINO:
+         results = self.processor.post_process_grounded_object_detection(
+             outputs,
+             inputs.input_ids,
+-            box_threshold=box_threshold,
++            threshold=box_threshold,
+             text_threshold=text_threshold,
+             target_sizes=[k.size[::-1] for k in images_pil],
+         )
+diff --git a/pyproject.toml b/pyproject.toml
+index 48a3137..8a83ebb 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -10,7 +10,7 @@ readme = "README.md"
+ authors = [
+   { name = "Luca Medeiros", email = "lucamedeiros@outlook.com" },
+ ]
+-requires-python = ">=3.11"
++requires-python = ">=3.10"
+ dynamic = ["dependencies"]
+ 
+ [tool.setuptools.dynamic]
