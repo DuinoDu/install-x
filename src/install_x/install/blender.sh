@@ -31,7 +31,9 @@ if [ -f $BIN_PATH/blender ];then
 fi
 
 echo "Downloading Blender from $BLENDER_URL..."
-wget -q --show-progress "$BLENDER_URL" -O /tmp/blender.tar.xz
+if [ ! -f /tmp/blender.tar.xz ];then
+    wget -q --show-progress "$BLENDER_URL" -O /tmp/blender.tar.xz
+fi
 
 if [ $? -ne 0  ]; then
     echo "Error: Failed to download Blender."

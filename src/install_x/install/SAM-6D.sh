@@ -2,7 +2,7 @@
 
 _curfile=$(realpath $0)
 cur=$(dirname $_curfile)
-source $cur/_utils.sh
+source $cur/base.sh
 
 url="https://github.com/JiehongLin/SAM-6D"
 name=$(basename $url)
