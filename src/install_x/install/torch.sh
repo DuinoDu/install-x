@@ -42,6 +42,7 @@ function find_torchvision_version() {
 #   cu121: torch==2.1.x, 2.2.x, 2.3.x, 2.4.x 2.5.x
 #   cu124: torch==2.4.x 2.5.x
 #   cu126: torch==2.6.0
+#   cu128: torch==2.7.0
 #
 #   torch>=2.5 DON'T support py38
 #
