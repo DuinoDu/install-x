@@ -4,7 +4,7 @@ _curfile=$(realpath $0)
 cur=$(dirname $_curfile)
 source $cur/base.sh
 
-url=Github Link
+url=https://github.com/wyysf-98/CraftsMan3D
 name=$(basename $url)
 name=${name%.git}
 
@@ -15,15 +15,9 @@ cd $GITHUB/$name
 # git reset --hard HEAD
 # git apply $cur/patch/${name}.patch
 
-# python3 -c "import ${name}" 2>/dev/null
-# if [ $? -eq 0 ]; then
-#     echo "${name} is already installed, skip"
-#     exit
-# fi
-
-# TODO
-# bash $cur/torch.sh
-# 
+install_pytorch 2.4.1
+pip3 install "huggingface_hub[cli]"
+pip3 install -r docker/requirements.txt
 # $SED -i -e "s/torch==/# torch==/g" requirements.txt
 # $SED -i -e "s/transformers==/# transformers==/g" requirements.txt
 # if python3 -c "import transformers" 2>/dev/null; then
@@ -34,12 +28,31 @@ cd $GITHUB/$name
 # fi
 # pip3 install -r requirements.txt
 
-
 if [ ! -f Makefile ];then
     tee -a Makefile <<-'EOF'
-infer:
-    python inference.py
+
+download-weight:
+    huggingface-cli download craftsman3d/craftsman --local-dir ./ckpts/craftsman
+
+example:
+    python inference.py --input eval_data --device 0 --model ./ckpts/craftsman
+
+app:
+    python gradio_app.py --model_path ./ckpts/craftsman
+
+# training the shape-autoencoder
+train1:
+    python train.py --config ./configs/shape-autoencoder/michelangelo-l768-e64-ne8-nd16.yaml \
+        --train --gpu 0
+
+# training the image-to-shape diffusion model
+train2:
+    python train.py --config .configs/image-to-shape-diffusion/clip-dino-rgb-pixart-lr2e4-ddim.yaml \
+        --train --gpu 0
+
 EOF
     $SED -i 's/    /\t/g' Makefile
 fi
-make infer 
+
+make download-weight
+make app

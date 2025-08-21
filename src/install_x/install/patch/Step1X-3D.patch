@@ -1,0 +1,48 @@
+diff --git a/step1x3d_geometry/models/conditional_encoders/dinov2_with_registers/modeling_dinov2_with_registers.py b/step1x3d_geometry/models/conditional_encoders/dinov2_with_registers/modeling_dinov2_with_registers.py
+index 255051d..36d997c 100755
+--- a/step1x3d_geometry/models/conditional_encoders/dinov2_with_registers/modeling_dinov2_with_registers.py
++++ b/step1x3d_geometry/models/conditional_encoders/dinov2_with_registers/modeling_dinov2_with_registers.py
+@@ -665,28 +665,34 @@ class Dinov2WithRegistersPreTrainedModel(PreTrainedModel):
+         if isinstance(module, (nn.Linear, nn.Conv2d)):
+             # Upcast the input in `fp32` and cast it back to desired `dtype` to avoid
+             # `trunc_normal_cpu` not implemented in `half` issues
+-            module.weight.data = nn.init.trunc_normal_(
+-                module.weight.data.to(torch.float32),
++            module.weight.data = module.weight.data.to(torch.float32)
++            nn.init.trunc_normal_(
++                module.weight.data,
+                 mean=0.0,
+                 std=self.config.initializer_range,
+-            ).to(module.weight.dtype)
++            )
++            module.weight.data = module.weight.data.to(module.weight.dtype)
+             if module.bias is not None:
+                 module.bias.data.zero_()
+         elif isinstance(module, nn.LayerNorm):
+             module.bias.data.zero_()
+             module.weight.data.fill_(1.0)
+         elif isinstance(module, Dinov2WithRegistersEmbeddings):
+-            module.position_embeddings.data = nn.init.trunc_normal_(
+-                module.position_embeddings.data.to(torch.float32),
++            module.position_embeddings.data = module.position_embeddings.data.to(torch.float32)
++            nn.init.trunc_normal_(
++                module.position_embeddings.data,
+                 mean=0.0,
+                 std=self.config.initializer_range,
+-            ).to(module.position_embeddings.dtype)
++            )
++            module.position_embeddings.data = module.position_embeddings.data.to(module.position_embeddings.dtype)
+ 
+-            module.cls_token.data = nn.init.trunc_normal_(
+-                module.cls_token.data.to(torch.float32),
++            module.cls_token.data = module.cls_token.data.to(torch.float32)
++            nn.init.trunc_normal_(
++                module.cls_token.data,
+                 mean=0.0,
+                 std=self.config.initializer_range,
+-            ).to(module.cls_token.dtype)
++            )
++            module.cls_token.data = module.cls_token.data.to(module.cls_token.dtype)
+ 
+ 
+ _EXPECTED_OUTPUT_SHAPE = [1, 257, 768]
