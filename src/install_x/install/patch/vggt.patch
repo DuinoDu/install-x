@@ -1,0 +1,121 @@
+diff --git a/demo_gradio.py b/demo_gradio.py
+index 0d10242..37b3a5d 100644
+--- a/demo_gradio.py
++++ b/demo_gradio.py
+@@ -687,5 +687,9 @@ with gr.Blocks(
+         inputs=[input_video, input_images],
+         outputs=[reconstruction_output, target_dir_output, image_gallery, log_output],
+     )
++    # demo.queue(max_size=20).launch(show_error=True, share=True)
++
++    # server.launch()
++    from pdebug.utils.gradio_utils import run_demo
++    run_demo(demo.queue(max_size=20), port=8083)
+ 
+-    demo.queue(max_size=20).launch(show_error=True, share=True)
+diff --git a/demo_viser.py b/demo_viser.py
+index e0211da..3a46737 100644
+--- a/demo_viser.py
++++ b/demo_viser.py
+@@ -39,6 +39,7 @@ def viser_wrapper(
+     background_mode: bool = False,
+     mask_sky: bool = False,
+     image_folder: str = None,
++    mask_folder: str = None,
+ ):
+     """
+     Visualize predicted 3D points and camera poses with viser.
+@@ -88,6 +89,8 @@ def viser_wrapper(
+     # Apply sky segmentation if enabled
+     if mask_sky and image_folder is not None:
+         conf = apply_sky_segmentation(conf, image_folder)
++    if mask_folder and image_folder:
++        conf = apply_mask_folder(conf, mask_folder, image_folder)
+ 
+     # Convert images from (S, 3, H, W) to (S, H, W, 3)
+     # Then flatten everything for the point cloud
+@@ -305,6 +308,56 @@ def apply_sky_segmentation(conf: np.ndarray, image_folder: str) -> np.ndarray:
+     return conf
+ 
+ 
++def apply_mask_folder(conf: np.ndarray, mask_folder: str, image_folder: str) -> np.ndarray:
++    """
++    Apply segmentation to confidence scores.
++
++    Args:
++        conf (np.ndarray): Confidence scores with shape (S, H, W)
++        mask_folder (str): Path to the folder containing mask images
++        image_folder (str): Path to the folder containing input images
++
++    Returns:
++        np.ndarray: Updated confidence scores with sky regions masked out
++    """
++    S, H, W = conf.shape
++    sky_masks_dir = image_folder.rstrip("/") + "_sky_masks"
++    os.makedirs(sky_masks_dir, exist_ok=True)
++
++    # Download skyseg.onnx if it doesn't exist
++    if not os.path.exists("skyseg.onnx"):
++        print("Downloading skyseg.onnx...")
++        download_file_from_url("https://huggingface.co/JianyuanWang/skyseg/resolve/main/skyseg.onnx", "skyseg.onnx")
++
++    skyseg_session = onnxruntime.InferenceSession("skyseg.onnx")
++    image_files = sorted(glob.glob(os.path.join(image_folder, "*")))
++    mask_list = []
++
++    print("Generating sky masks...")
++    for i, image_path in enumerate(tqdm(image_files[:S])):  # Limit to the number of images in the batch
++        image_name = os.path.basename(image_path)
++        mask_filepath = os.path.join(mask_folder, image_name)
++        mask = cv2.imread(mask_filepath, cv2.IMREAD_GRAYSCALE)
++
++        # Resize mask to match H×W if needed
++        if mask.shape[0] != H or mask.shape[1] != W:
++            mask = cv2.resize(mask, (W, H))
++        mask_list.append(mask)
++
++    # Convert list to numpy array with shape S×H×W
++    mask_array = np.array(mask_list)
++    # Apply sky mask to confidence scores
++    sky_id = 2
++    person_id = 12
++    mask_binary = np.logical_and(
++            mask_array != 2,
++            mask_array != 12).astype(np.float32)
++    conf = conf * mask_binary
++
++    print("Mask folder applied successfully")
++    return conf
++
++
+ parser = argparse.ArgumentParser(description="VGGT demo with viser for 3D visualization")
+ parser.add_argument(
+     "--image_folder", type=str, default="examples/kitchen/images/", help="Path to folder containing images"
+@@ -316,6 +369,7 @@ parser.add_argument(
+     "--conf_threshold", type=float, default=25.0, help="Initial percentage of low-confidence points to filter out"
+ )
+ parser.add_argument("--mask_sky", action="store_true", help="Apply sky segmentation to filter out sky points")
++parser.add_argument('--mask_folder', default=None, type=str, help='Mask segmentation to filter out sky and person.')
+ 
+ 
+ def main():
+@@ -394,6 +448,7 @@ def main():
+         background_mode=args.background_mode,
+         mask_sky=args.mask_sky,
+         image_folder=args.image_folder,
++        mask_folder=args.mask_folder,
+     )
+     print("Visualization complete")
+ 
+diff --git a/requirements.txt b/requirements.txt
+index 1cb61a2..14b5384 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -1,5 +1,5 @@
+-torch==2.3.1
+-torchvision==0.18.1
++#torch==2.3.1
++#torchvision==0.18.1
+ numpy==1.26.1
+ Pillow
+ huggingface_hub

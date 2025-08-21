@@ -1,0 +1,33 @@
+diff --git a/metric_depth/run.py b/metric_depth/run.py
+index 5ead2fa..ac5b4df 100644
+--- a/metric_depth/run.py
++++ b/metric_depth/run.py
+@@ -30,6 +30,7 @@ if __name__ == '__main__':
+     parser.add_argument('--target_fps', type=int, default=-1, help='target fps of the input video, -1 means the original fps')
+     parser.add_argument('--fp32', action='store_true', help='model infer with torch.float32, default is torch.float16')
+     parser.add_argument('--save_npz', action='store_true', help='save depths as npz')
++    parser.add_argument('--save_exr', action='store_true', help='save depths as exr')
+     parser.add_argument('--grayscale', action='store_true', help='do not apply colorful palette')
+     
+     args = parser.parse_args()
+diff --git a/requirements.txt b/requirements.txt
+index 4e34aaa..8fea9bf 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -1,13 +1,13 @@
+ numpy==1.23.1
+-torch==2.1.1
+-torchvision==0.16.1
++##torch==2.1.1
++##torchvision==0.16.1
+ opencv-python
+ matplotlib
+ pillow
+ imageio==2.19.3
+ imageio-ffmpeg==0.4.7
+ decord
+-xformers==0.0.23
++#xformers==0.0.23
+ einops==0.4.1
+ easydict
+ tqdm

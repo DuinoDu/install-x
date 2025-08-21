@@ -8,7 +8,7 @@ url=Github Link
 name=$(basename $url)
 name=${name%.git}
 
-prepare_github $url
+prepare_github $url 3.10
 cd $GITHUB/$name
 
 # If have patch, uncomment below.
@@ -22,6 +22,17 @@ if [ $? -eq 0 ]; then
 fi
 
 # TODO
+# bash $cur/torch.sh
+# 
+# $SED -i -e "s/torch==/# torch==/g" requirements.txt
+# $SED -i -e "s/transformers==/# transformers==/g" requirements.txt
+# if python3 -c "import transformers" 2>/dev/null; then
+#     version=$(python3 -c "import transformers; print(transformers.__version__)" 2>/dev/null || echo "Unknown")
+#     echo "  transformers version: $version"
+# else
+#     pip3 install transformers==4.40.1
+# fi
+# pip3 install -r requirements.txt
 
 
 

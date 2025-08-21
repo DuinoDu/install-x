@@ -1,0 +1,70 @@
+diff --git a/app.py b/app.py
+index 8808643..f2d3a0a 100644
+--- a/app.py
++++ b/app.py
+@@ -69,4 +69,6 @@ server = gr.Interface(
+     ]
+ )
+ 
+-server.launch()
++# server.launch()
++from pdebug.utils.gradio_utils import run_demo
++run_demo(server, port=8082)
+diff --git a/requirements.txt b/requirements.txt
+index 0302775..b7da954 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -1,5 +1,5 @@
+-torch==2.2.1
+-transformers==4.38
++# # torch==2.2.1
++# # transformers==4.38
+ matplotlib
+ pillow==10.2.0
+ huggingface-hub==0.26.5
+diff --git a/utils.py b/utils.py
+index ea7a0c5..b5e9e80 100644
+--- a/utils.py
++++ b/utils.py
+@@ -242,7 +242,9 @@ def figure_to_img(fig):
+ 
+ from render import render, Model
+ import math
+-axis_model = Model("./assets/axis.obj", texture_filename="./assets/axis.png")
++import os, sys
++root = os.path.dirname(__file__)
++axis_model = Model(f"{root}/assets/axis.obj", texture_filename=f"{root}/assets/axis.png")
+ def render_3D_axis(phi, theta, gamma):
+     radius = 240
+     # camera_location = [radius * math.cos(phi), radius * math.sin(phi), radius * math.tan(theta)]
+@@ -253,7 +255,7 @@ def render_3D_axis(phi, theta, gamma):
+         axis_model,
+         height=512,
+         width=512,
+-        filename="tmp_render.png",
++        filename="/tmp/tmp_render.png",
+         cam_loc = camera_location
+     )
+     img = img.rotate(gamma)
+diff --git a/vision_tower.py b/vision_tower.py
+index bdac993..281333e 100644
+--- a/vision_tower.py
++++ b/vision_tower.py
+@@ -102,13 +102,13 @@ class DINOv2_MLP(nn.Module):
+         super().__init__()
+         # self.dinov2 = AutoModel.from_pretrained(DINO_BASE)
+         if dino_mode == 'base':
+-            self.dinov2 = FLIP_DINOv2.from_pretrained(DINO_BASE, cache_dir='./')
++            self.dinov2 = FLIP_DINOv2.from_pretrained(DINO_BASE)
+         elif dino_mode == 'large':
+-            self.dinov2 = FLIP_DINOv2.from_pretrained(DINO_LARGE, cache_dir='./')
++            self.dinov2 = FLIP_DINOv2.from_pretrained(DINO_LARGE)
+         elif dino_mode == 'small':
+-            self.dinov2 = FLIP_DINOv2.from_pretrained(DINO_SMALL, cache_dir='./')
++            self.dinov2 = FLIP_DINOv2.from_pretrained(DINO_SMALL)
+         elif dino_mode == 'giant':
+-            self.dinov2 = FLIP_DINOv2.from_pretrained(DINO_GIANT, cache_dir='./')
++            self.dinov2 = FLIP_DINOv2.from_pretrained(DINO_GIANT)
+         
+         self.down_sampler = MLP_dim(in_dim=in_dim, out_dim=out_dim)
+         self.random_mask  = False
