@@ -45,17 +45,6 @@ function find_torchvision_version() {
 #   cu128: torch==2.7.0
 #
 #   torch>=2.5 DON'T support py38
-#
-#   DEFAULT: py3.10 - cuda124 - torch 2.4.1 torchvision 0.19.1
-python3 -c "import torch" 2>/dev/null
-if [ $? -eq 0 ]; then
-    if [ "${FORCE_INSTALL_TORCH}"x = "1"x ]; then
-        echo "override, install torch ..."
-    else
-        echo "torch is already installed, skip"
-        return
-    fi
-fi
 
 torch_version=2.4.1
 if [ -n "$1" ];then
@@ -122,5 +111,15 @@ if [ -d ${CACHE_DIR}/${pytorch_cache} ];then
     done
 
 else
-    pip3 install torch==${torch_version} torchvision==${tv_version} --index-url https://download.pytorch.org/whl/${cu_version}
+    python3 -c "import torch" 2>/dev/null
+    if [ $? -eq 0 ]; then
+        if [ "${FORCE_INSTALL_TORCH}"x = "1"x ]; then
+            echo "override, install torch ..."
+        else
+            echo "torch is already installed, skip"
+            exit 0
+        fi
+    fi
+    pip3 install torch==${torch_version} --index-url https://download.pytorch.org/whl/${cu_version}
+    pip3 install torchvision==${tv_version} --index-url https://download.pytorch.org/whl/${cu_version}
 fi

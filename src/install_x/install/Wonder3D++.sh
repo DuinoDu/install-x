@@ -31,7 +31,6 @@ fi
 pip install -r requirements.txt
 pip install torch_scatter
 
-
 if [ ! -f Makefile ];then
     tee -a Makefile <<-'EOF'
 
@@ -46,5 +45,5 @@ EOF
     $SED -i 's/    /\t/g' Makefile
 fi
 
-make download-weights
+# make download-weights
 make infer

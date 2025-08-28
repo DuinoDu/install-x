@@ -14,25 +14,27 @@ if [ $? -eq 0 ]; then
     exit
 fi
 
-prepare_github $url
-cd $GITHUB/$name
+pip3 install spconv-cu124
 
-git reset --hard HEAD
-git apply $cur/patch/${name}.patch
-
-prepare_github https://github.com/FindDefinition/cumm
-cd $GITHUB/cumm
-pip3 install .
-
-cd $GITHUB/spconv
-pip3 install -e .
-
-python3 -c "import spconv"
-
-function help() {
-    echo ""
-}
-
-if [ $? -eq 0 ]; then
-    help
-fi
+# prepare_github $url
+# cd $GITHUB/$name
+# 
+# git reset --hard HEAD
+# git apply $cur/patch/${name}.patch
+# 
+# prepare_github https://github.com/FindDefinition/cumm
+# cd $GITHUB/cumm
+# pip3 install .
+# 
+# cd $GITHUB/spconv
+# pip3 install -e .
+# 
+# python3 -c "import spconv"
+# 
+# function help() {
+#     echo ""
+# }
+# 
+# if [ $? -eq 0 ]; then
+#     help
+# fi

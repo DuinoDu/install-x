@@ -1,0 +1,60 @@
+diff --git a/utils/corresp_util.py b/utils/corresp_util.py
+index a65a8f0..08b99ae 100644
+--- a/utils/corresp_util.py
++++ b/utils/corresp_util.py
+@@ -49,7 +49,7 @@ def cyclic_buddies_matching(
+     u1 = query_points
+ 
+     # 2D locations of the cyclic points.
+-    cycle_ids = obj2query_nn_ids[query2obj_nn_ids]
++    cycle_ids = obj2query_nn_ids.to(query2obj_nn_ids.device)[query2obj_nn_ids]
+     u2 = query_points[cycle_ids]
+ 
+     # L2 distances between the query and cyclic points.
+@@ -107,7 +107,7 @@ def establish_correspondences(
+ 
+         # Get IDs of features originating from the current template.
+         tpl_feat_mask = torch.as_tensor(
+-            object_repre.feat_to_template_ids == template_id
++            object_repre.feat_to_template_ids == template_id.to(object_repre.feat_to_template_ids.device)
+         )
+         tpl_feat_ids = torch.nonzero(tpl_feat_mask).flatten()
+ 
+@@ -131,13 +131,13 @@ def establish_correspondences(
+         else:
+             raise ValueError(f"Unknown feature matching type ({feat_matching_type}).")
+ 
+-        match_obj_feat_ids = tpl_feat_ids[match_obj_ids]
++        match_obj_feat_ids = tpl_feat_ids.to(match_obj_ids.device)[match_obj_ids]
+ 
+         # Structures for storing 2D-3D correspondences and related info.
+         coord_2d = query_points[match_query_ids]
+         coord_2d_ids = match_query_ids
+         assert object_repre.vertices is not None
+-        coord_3d = object_repre.vertices[match_obj_feat_ids]
++        coord_3d = object_repre.vertices.to(match_obj_feat_ids.device)[match_obj_feat_ids]
+         coord_conf = match_scores
+         full_query_nn_dists = match_dists
+         full_query_nn_ids = match_obj_feat_ids
+diff --git a/utils/template_util.py b/utils/template_util.py
+index 6a500d7..7eb718b 100644
+--- a/utils/template_util.py
++++ b/utils/template_util.py
+@@ -56,7 +56,7 @@ def calc_tfidf(
+ 
+     # Calculate inverse document frequencies.
+     feature_word_ids_flat = feature_word_ids.reshape(-1)
+-    idf = word_idfs[feature_word_ids_flat]
++    idf = word_idfs.to(feature_word_ids_flat.device)[feature_word_ids_flat]
+ 
+     # Calculate tfidf values.
+     tfidf = torch.multiply(tf, idf)
+@@ -164,7 +164,7 @@ def tfidf_matching(
+     num_templates = object_repre.template_descs.shape[0]
+     assert object_repre.template_descs is not None
+     match_feat_cos_sims = torch.nn.functional.cosine_similarity(
+-        object_repre.template_descs, query_tfidf.tile(num_templates, 1)
++        object_repre.template_descs.to(query_tfidf.device), query_tfidf.tile(num_templates, 1)
+     )
+ 
+     # Select templates with the highest cosine similarity.

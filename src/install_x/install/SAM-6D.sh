@@ -14,12 +14,16 @@ git reset --hard HEAD
 git apply ${cur}/patch/SAM-6D.patch
 
 bash $cur/torch.sh 2.4.1
+bash $cur/xformers.sh
 
 cd SAM-6D
 conda_to_pip environment.yaml requirements.txt
 sed -i -e "s/torch==/#torch==/g" requirements.txt
 sed -i -e "s/torchvision==/#torchvision==/g" requirements.txt
 sed -i -e "s/pytorch-lightning==1.8.1/pytorch-lightning==1.9.1/g" requirements.txt
+sed -i -e "s/xformers==/#xformers==/g" requirements.txt
+pre_install_reqquirement_if_need torchmetrics 0.10.3
+
 pip3 install -r requirements.txt
 pip3 install ruamel_yaml
 

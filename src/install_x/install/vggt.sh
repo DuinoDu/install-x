@@ -18,5 +18,6 @@ sed -i -e "s/torchvision==/#torchvision==/g" requirements.txt
 bash $cur/torch.sh
 pip3 install -r requirements.txt
 pip3 install -r requirements_demo.txt
+pip3 install -e .
 
-otn-cli --node vggt --repo $GITHUB/$name --unittest True
+otn-cli --node vggt --unittest True

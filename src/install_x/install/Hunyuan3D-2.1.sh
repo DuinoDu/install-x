@@ -22,21 +22,14 @@ fi
 
 bash $cur/torch.sh 2.4.1
 
-$SED -i -e "s/transformers==/# transformers==/g" file
-if python3 -c "import transformers" 2>/dev/null; then
-    version=$(python3 -c "import transformers; print(transformers.__version__)" 2>/dev/null || echo "Unknown")
-    echo "  transformers version: $version"
-else
-    pip3 install transformers==4.46.0
-fi
+pre_install_reqquirement_if_need transformers "==4.46.0"
+pre_install_reqquirement_if_need bpy "==4.0 --extra-index-url https://download.blender.org/pypi"
 pip3 install -r requirements.txt
 
 cd hy3dpaint/custom_rasterizer
-pip3 install -e .
-cd ../..
-cd hy3dpaint/DifferentiableRenderer
+pip3 install .
+cd ../../hy3dpaint/DifferentiableRenderer
 bash compile_mesh_painter.sh
-cd ../..
 
 cd $GITHUB/$name
 

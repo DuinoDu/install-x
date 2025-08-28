@@ -183,3 +183,19 @@ function prepare_github() {
     fi
     popd
 }
+
+
+# Desc: check library and install if need. And uncomment in requirements.txt
+function pre_install_reqquirement_if_need() {
+    req_txt=requirements.txt
+    $SED -i -e "s/$1==/# $1==/g" $req_txt
+    if python3 -c "import $1" 2>/dev/null; then
+        version=$(python3 -c "import $1; print($1.__version__)" 2>/dev/null || echo "Unknown")
+        echo "  %$1 version: $version"
+    else
+        if [[ "$2" != "=="*  ]]; then
+            $2="==$2"
+        fi
+        pip3 install $1"$2"
+    fi
+}
