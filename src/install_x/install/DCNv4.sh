@@ -15,10 +15,11 @@ bash $cur/mmcv.sh v1.5.0
 pip3 install mmsegmentation==0.27.0
 pip3 install timm==0.6.11 mmdet==2.28.1
 
-# build DCNv3
-cd $GITHUB/$name/segmentation/ops_dcnv3
-bash ./make.sh
-python3 test.py
+# Skip DCNv3
+# # build DCNv3, not good for torch>=2.6
+# cd $GITHUB/$name/segmentation/ops_dcnv3
+# bash ./make.sh
+# python3 test.py
 
 # build DCNv4
 cd $GITHUB/$name/DCNv4_op
