@@ -8,6 +8,12 @@ url=https://github.com/Dao-AILab/flash-attention
 name=$(basename $url)
 name=${name%.git}
 
+python3 -c "import flash_attn" 2>/dev/null
+if [ $? -eq 0 ]; then
+    echo "${name} is already installed, skip"
+    exit
+fi
+
 prepare_github $url
 cd $GITHUB/$name
 

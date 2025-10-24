@@ -28,6 +28,7 @@ git checkout $MMCV_VERSION
 git submodule update --init --recursive
 git apply $cur/patch/mmcv_v1.5.0.patch
 
+set -e
 export MMCV_WITH_CUDA=1
 export MMCV_WITH_OPS=1
 python3 setup.py install
