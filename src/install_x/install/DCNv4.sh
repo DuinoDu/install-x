@@ -23,6 +23,9 @@ pip3 install timm==0.6.11 mmdet==2.28.1
 
 # build DCNv4
 cd $GITHUB/$name/DCNv4_op
+if [ -d build ];then
+    rm -rf build
+fi
 bash ./make.sh
 python3 test.py
 

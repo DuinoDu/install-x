@@ -28,6 +28,10 @@ git checkout $MMCV_VERSION
 git submodule update --init --recursive
 git apply $cur/patch/mmcv_v1.5.0.patch
 
+if [ -d build ];then
+    rm -rf build
+fi
+
 set -e
 export MMCV_WITH_CUDA=1
 export MMCV_WITH_OPS=1
