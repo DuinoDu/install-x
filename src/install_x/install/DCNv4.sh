@@ -27,8 +27,8 @@ bash ./make.sh
 python3 test.py
 
 cd $GITHUB/$name/segmentation
-wget https://huggingface.co/OpenGVLab/DCNv4/resolve/main/upernet_flash_internimage_l_640_160k_ade20k.pth
 
+pip3 install requests
 otn-cli --node internimage_semseg --repo $GITHUB/$name --unittest True
 
 # # train
