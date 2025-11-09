@@ -52,36 +52,39 @@ if [ -n "$1" ];then
 fi
 tv_version=$(find_torchvision_version $torch_version)
 
-if [ -z "$FORCE_CUDA_VERSION" ];then
-    version=$(get_cuda_version)
-    cu_version=
-    if [ -n "$2" ];then
-        cu_version="$2"
-    elif [[ "$version" == *"11.6"*  ]]; then
-        cu_version="cu116"
-    elif [[ "$version" == *"11.7"*  ]]; then
-        cu_version="cu117"
-    elif [[ "$version" == *"12.1"* ]]; then
-        cu_version="cu121"
-    elif [[ "$version" == *"12.2"* ]]; then
-        cu_version="cu121"
-    elif [[ "$version" == *"12.3"* ]]; then
-        cu_version="cu121"
-    elif [[ "$version" == *"12.4"* ]]; then
-        cu_version="cu124"
-    elif [[ "$version" == *"12.5"* ]]; then
-        cu_version="cu124"
-    elif [[ "$version" == *"12.6"* ]]; then
-        # cu_version="cu126"
-        cu_version="cu124"
-    elif [[ "$version" == *"12.9"* ]]; then
-        cu_version="cu128"
+
+if [[ "$(uname)" == "Linux" ]]; then
+    if [ -z "$FORCE_CUDA_VERSION" ];then
+        version=$(get_cuda_version)
+        cu_version=
+        if [ -n "$2" ];then
+            cu_version="$2"
+        elif [[ "$version" == *"11.6"*  ]]; then
+            cu_version="cu116"
+        elif [[ "$version" == *"11.7"*  ]]; then
+            cu_version="cu117"
+        elif [[ "$version" == *"12.1"* ]]; then
+            cu_version="cu121"
+        elif [[ "$version" == *"12.2"* ]]; then
+            cu_version="cu121"
+        elif [[ "$version" == *"12.3"* ]]; then
+            cu_version="cu121"
+        elif [[ "$version" == *"12.4"* ]]; then
+            cu_version="cu124"
+        elif [[ "$version" == *"12.5"* ]]; then
+            cu_version="cu124"
+        elif [[ "$version" == *"12.6"* ]]; then
+            # cu_version="cu126"
+            cu_version="cu124"
+        elif [[ "$version" == *"12.9"* ]]; then
+            cu_version="cu128"
+        else
+            echo "[ERROR] Unknown cuda version: ${version}"
+            exit
+        fi
     else
-        echo "[ERROR] Unknown cuda version: ${version}"
-        exit
+        cu_version=$FORCE_CUDA_VERSION
     fi
-else
-    cu_version=$FORCE_CUDA_VERSION
 fi
 
 python_version=3.10 
@@ -120,6 +123,14 @@ else
             exit 0
         fi
     fi
-    pip3 install torch==${torch_version} --index-url https://download.pytorch.org/whl/${cu_version}
-    pip3 install torchvision==${tv_version} --index-url https://download.pytorch.org/whl/${cu_version}
+
+    if [[ "$(uname)" == "Linux" ]]; then
+        pip3 install torch==${torch_version} --index-url https://download.pytorch.org/whl/${cu_version}
+        pip3 install torchvision==${tv_version} --index-url https://download.pytorch.org/whl/${cu_version}
+    elif [[ "$(uname)" == "Darwin"  ]];then
+        pip3 install torch==${torch_version}
+        pip3 install torchvision==${tv_version}
+    elif [[ "$(uname)" == *"_NT"* ]]; then
+        echo "Windows not supported "
+    fi
 fi
