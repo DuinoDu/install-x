@@ -11,3 +11,5 @@ wheels/
 
 requirements-dev.lock
 requirements.lock
+
+tmp*

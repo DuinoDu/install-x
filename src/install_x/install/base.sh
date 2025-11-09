@@ -4,7 +4,7 @@
 if [[ -z "$INSTALL_X_CACHE" ]];then
     INSTALL_X_CACHE=$HOME/.cache/install-x
 fi
-if [ ! -d $INSTALL_X_CACHE ];then
+if [[ ! -L "$INSTALL_X_CACHE" && ! -d "$INSTALL_X_CACHE"  ]]; then
     mkdir -p $INSTALL_X_CACHE
 fi
 
@@ -47,6 +47,14 @@ function get_cuda_version() {
 # Usage: 
 #   create_venv 3.10
 function create_venv() {
+    res=$(is_venv_python | tail -n 1)
+    if [ $res -eq 0 ] && [ -d .venv ]; then
+        # It is venv and .venv exists, do nothing.
+        which python3
+        which pip3
+        return
+    fi  
+
     if [ -n "$1" ];then
         res=$(is_venv_python | tail -n 1)
         if [ $res -eq 0 ] && [ ! -d .venv ]; then
