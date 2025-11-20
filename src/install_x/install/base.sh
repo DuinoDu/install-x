@@ -4,7 +4,7 @@
 if [[ -z "$INSTALL_X_CACHE" ]];then
     INSTALL_X_CACHE=$HOME/.cache/install-x
 fi
-if [ ! -d $INSTALL_X_CACHE ];then
+if [[ ! -L "$INSTALL_X_CACHE" && ! -d "$INSTALL_X_CACHE"  ]]; then
     mkdir -p $INSTALL_X_CACHE
 fi
 

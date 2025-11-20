@@ -8,6 +8,12 @@ url=https://github.com/Dao-AILab/flash-attention
 name=$(basename $url)
 name=${name%.git}
 
+python3 -c "import flash_attn" 2>/dev/null
+if [ $? -eq 0 ]; then
+    echo "${name} is already installed, skip"
+    exit
+fi
+
 prepare_github $url
 cd $GITHUB/$name
 
@@ -24,6 +30,15 @@ if [ $? -eq 0 ]; then
     exit
 fi
 
-pip3 install . --no-build-isolation
+if [ -d build ];then
+    rm -rf build
+fi
+
+export MAX_JOBS=4
+export VERBOSE=1
+export NINJA_FLAGS="-v"
+export CFLAGS="-v" 
+export CXXFLAGS="-v"
+pip3 install . --no-build-isolation -vvv
 
 # pip3 install https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.2/flash_attn-2.8.2+cu12torch2.6cxx11abiTRUE-cp310-cp310-linux_x86_64.whl
