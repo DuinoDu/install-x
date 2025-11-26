@@ -20,11 +20,26 @@ else
     pip3 install transformers
 fi
 
-if python3 -c "import executorch" 2>/dev/null; then
-    version=$(python3 -c "from executorch import version; print(version.__version__)" 2>/dev/null || echo "Unknown")
-    echo "  executorch version: $version"
+install_from_pip=1
+if [ ! -n "$1" ];then
+    install_from_pip=0
+fi
+
+if [[ $install_from_pip == "1" ]]; then
+    if python3 -c "import executorch" 2>/dev/null; then
+        version=$(python3 -c "from executorch import version; print(version.__version__)" 2>/dev/null || echo "Unknown")
+        echo "  executorch version: $version"
+    else
+        pip3 install executorch==1.0.1
+    fi
 else
-    pip3 install executorch
+    pip3 uninstall executorch==1.0.1
+    OLD_GITHUB=$GITHUB
+    GITHUB="."
+    prepare_github https://github.com/pytorch/executorch.git 3.10 v1.0.1
+    GITHUB=$OLD_GITHUB
+    
+    # TODO: add more scripts
 fi
 
 if [ Darwin = 'Darwin' ]; then
