@@ -102,7 +102,8 @@ function create_venv() {
         fi
     fi
     
-    if [[ -v "$VIRTUAL_ENV" ]];then
+    # if [[ -v "$VIRTUAL_ENV" ]];then       # macos don't support
+    if [[ -n "$VIRTUAL_ENV" ]];then
         pip3_bin=$VIRTUAL_ENV/bin/pip3
         if [ ! -f $pip3_bin ];then
             wget -O- https://bootstrap.pypa.io/get-pip.py | python3
