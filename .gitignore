@@ -13,3 +13,4 @@ requirements-dev.lock
 requirements.lock
 
 tmp*
+.DS_Store
